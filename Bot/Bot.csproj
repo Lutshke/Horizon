@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<LangVersion>9.0</LangVersion>
+		<TargetFramework>net5.0</TargetFramework>
+		<ApplicationIcon>images\icon.ico</ApplicationIcon>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\.editorconfig" Link=".editorconfig" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<PackageReference Include="DSharpPlus" Version="4.2.0-nightly-01026" />
+		<PackageReference Include="DSharpPlus.CommandsNext" Version="4.2.0-nightly-01026" />
+		<PackageReference Include="DSharpPlus.Interactivity" Version="4.2.0-nightly-01026" />
+		<PackageReference Include="DSharpPlus.Lavalink" Version="4.2.0-nightly-01026" />
+		<PackageReference Include="DSharpPlus.SlashCommands" Version="4.2.0-nightly-01026" />
+		<PackageReference Include="SpotifyAPI.Web" Version="6.2.2" />
+		<PackageReference Include="SpotifyAPI.Web.Auth" Version="6.2.2" />
+		<PackageReference Include="SpotifyWebApi-Core" Version="0.0.16" />
+	</ItemGroup>
+</Project>
