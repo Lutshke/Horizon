@@ -29,7 +29,7 @@ namespace Horizon.Commands
             }
 
             var state = StateLoader.GetState(ctx.Guild);
-            var loadResult = await Music.HandleVideoData(search, ctx.User).ConfigureAwait(false);
+            var loadResult = await Music.GetMediaData(search, ctx.User).ConfigureAwait(false);
             bool IsPlaylist = loadResult.Count > 1;
             var track = loadResult[0];
 

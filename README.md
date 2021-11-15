@@ -1,10 +1,11 @@
 # Horizon
 
 Dev Build of the Horizon Music Bot
-Horizon is a simple Music written in dotnet 5.0 by Me
+Horizon is written in C# by Sogga Conqueror of Femboys#9305
 
 ---
 
-Feature list:
+Supported Features:
 
 - Playing from Youtube, Soundcloud, Spotify and more comming
+- Playlist saving and loading system

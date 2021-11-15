@@ -12,6 +12,7 @@ using DSharpPlus.Lavalink;
 using Horizon.Downloader;
 using Horizon.Extensions;
 using Horizon.Interface;
+using static Horizon.Commands.Playlist;
 using static Horizon.Extensions.Checker; // For CheckFor.. Methods
 
 namespace Horizon.Commands
@@ -52,7 +53,7 @@ namespace Horizon.Commands
             if (state.Playing)
             {
                 CheckForMemberConnection(ctx.Member);
-                var loadResult = await HandleVideoData(search, ctx.User).ConfigureAwait(false);
+                var loadResult = await GetMediaData(search, ctx.User).ConfigureAwait(false);
 
                 var track = loadResult.First();
                 state.Queue.Insert(0, track);
@@ -74,7 +75,7 @@ namespace Horizon.Commands
                 return;
             }
 
-            var loadResult = await HandleVideoData(search, ctx.User).ConfigureAwait(false);
+            var loadResult = await GetMediaData(search, ctx.User).ConfigureAwait(false);
             var track = loadResult.First();
 
             state.Queue.Insert(0, track);
@@ -103,22 +104,59 @@ namespace Horizon.Commands
         [Command, Aliases("p")]
         public async Task Play(CommandContext ctx, [RemainingText] string search)
         {
-            CheckForMemberConnection(ctx.Member);
-
             var state = StateLoader.GetState(ctx.Guild);
+            var loadResult = await GetMediaData(search, ctx.User).ConfigureAwait(false);
+            await HandlePlaybackStart(ctx, state, loadResult).ConfigureAwait(false);
+        }
 
+        [Command, Aliases("pl")]
+        public async Task Playlist(CommandContext ctx, params string[] options)
+        {
+            switch (options[0].Trim().ToLower())
+            {
+                case "new":
+                    await CreateNewPlaylist(ctx);
+                    break;
+                case "show":
+                    if (options.Length < 2)
+                        throw new Exception("No id given :(");
+                    await ShowPlaylist(ctx, options[1]);
+                    break;
+                case "load":
+                    if (options.Length < 2)
+                        throw new Exception("No id given :(");
+                    await LoadPlaylist(ctx, options[1]);
+                    break;
+                case "delete":
+                    if (options.Length < 2)
+                        throw new Exception("No id given :(");
+                    DeletePlaylist(options[1]);
+                    break;
+                case "update":
+                    await UpdatePlaylist(ctx, options);
+                    break;
+                case "list":
+                    await GetUserPlaylists(ctx);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        public static async Task HandlePlaybackStart(CommandContext ctx, GuildState state, List<IVideo> result)
+        {
+            CheckForMemberConnection(ctx.Member);
             if (state.Connection is null)
                 state.Connection = await NodeConnection.ConnectAsync(ctx.Member.VoiceState.Channel).ConfigureAwait(false);
 
-            var loadResult = await HandleVideoData(search, ctx.User).ConfigureAwait(false);
-            bool IsPlaylist = loadResult.Count > 1;
-            var track = loadResult[0];
+            var IsPlaylist = result.Count > 1;
+            var track = result[0];
 
             if (IsPlaylist)
             {
-                foreach (IVideo trk in loadResult)
+                foreach (IVideo trk in result)
                     state.Queue.Add(trk);
-                int count = state.Playing ? loadResult.Count : loadResult.Count - 1;
+                int count = state.Playing ? result.Count : result.Count - 1;
                 await ctx.RespondAsync($"Added `{count}` tracks to the Queue!").ConfigureAwait(false);
 
                 if (!state.Playing)
@@ -305,7 +343,7 @@ namespace Horizon.Commands
         }
 
         // Music Util Functions
-        public static async Task<List<IVideo>> HandleVideoData(string search, DiscordUser user)
+        public static async Task<List<IVideo>> GetMediaData(string search, DiscordUser user)
         {
             var match = Regex.Match(search, @"(?:(?:[a-z]+\.)*)(\w+)\.(?:[a-z]+)");
             var host = match.Success ? match.Groups[1].Value : "default";

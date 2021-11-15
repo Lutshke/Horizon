@@ -22,7 +22,7 @@ namespace Horizon
             this.Title = title;
             this.VideoUrl = query;
             this.Duration = track.Length;
-            this.Uploader = "";
+            this.Uploader = "unknown";
         }
 
         public DiscordEmbedBuilder VideoEmbed()
