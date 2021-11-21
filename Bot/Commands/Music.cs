@@ -347,10 +347,7 @@ namespace Horizon.Commands
         {
             var match = Regex.Match(search, @"(?:(?:[a-z]+\.)*)(\w+)\.(?:[a-z]+)");
             var host = match.Success ? match.Groups[1].Value : "default";
-
-            if (Manager.Downloaders.ContainsKey(host))
-                return await Manager.Get(host).GetVideos(search, user).ConfigureAwait(false);
-            return await Manager.Get("default").GetVideos(search, user).ConfigureAwait(false);
+            return await Manager.Get(host).GetVideos(search, user).ConfigureAwait(false);
         }
 
         private static string GetTimeLine(TimeSpan FullTime, TimeSpan CurrentTime, int multiplier = 1)

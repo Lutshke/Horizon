@@ -10,7 +10,6 @@ using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.Lavalink;
 using DSharpPlus.Net;
 using DSharpPlus.SlashCommands;
-using Microsoft.Extensions.DependencyInjection;
 using SpotifyAPI.Web;
 
 namespace Horizon

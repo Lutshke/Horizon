@@ -22,13 +22,19 @@ namespace Horizon.Downloader
         public async Task<List<IVideo>> GetVideos(string query, DiscordUser user)
         {
             var tracks = query.StartsWith("http")
-                ? (await Node.Rest.GetTracksAsync(new Uri(query.Split("&start_radio")[0])).ConfigureAwait(false))
+                ? (await Node.Rest.GetTracksAsync(new Uri(query)).ConfigureAwait(false))
                 : (await Node.Rest.GetTracksAsync(query).ConfigureAwait(false));
 
             CheckForSong(tracks);
-            if (query.Contains("&list="))
-                return tracks.Tracks.Select(track => new DefaultVideo(user, track) as IVideo).ToList();
-            return tracks.Tracks.Take(1).Select(track => new DefaultVideo(user, track) as IVideo).ToList();
+            return GetTracksAsIVideo(user, tracks);
+        }
+
+        private static List<IVideo> GetTracksAsIVideo(DiscordUser user, LavalinkLoadResult tracks)
+        {
+            return (tracks.LoadResultType == LavalinkLoadResultType.PlaylistLoaded
+                            ? tracks.Tracks.Select(track => new DefaultVideo(user, track))
+                            : tracks.Tracks.Take(1).Select(track => new DefaultVideo(user, track)))
+            .Cast<IVideo>().ToList();
         }
     }
 }
