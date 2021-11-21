@@ -5,7 +5,7 @@ using Horizon.Interface;
 
 namespace Horizon
 {
-    public class SoundcloudVideo : IVideo
+    public class YoutubeDLVideo : IVideo
     {
         public LavalinkTrack Track { get; set; }
         public string Title { get; set; }
@@ -14,7 +14,7 @@ namespace Horizon
         public string Uploader { get; set; }
         public DiscordUser Requester { get; set; }
 
-        public SoundcloudVideo(DiscordUser user, LavalinkTrack track, string title, string query)
+        public YoutubeDLVideo(DiscordUser user, LavalinkTrack track, string title, string query)
         {
             this.Track = track;
             this.Requester = user;

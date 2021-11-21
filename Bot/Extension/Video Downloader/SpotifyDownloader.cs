@@ -33,7 +33,7 @@ namespace Horizon.Downloader
                 : (await Bot.Spotify.Playlists.Get(SpotifyId).ConfigureAwait(false)).Tracks.Items.First().Track as FullTrack;
             var tracks = await Node.Rest.GetTracksAsync($"{track.Name} {track.Artists.First().Name}").ConfigureAwait(false);
             CheckForSong(tracks);
-            return tracks.Tracks.Take(1).Select(track => new DefaultVideo(user, track) as IVideo).ToList();
+            return tracks.Tracks.Take(1).Select(track => new LavalinkVideo(user, track) as IVideo).ToList();
         }
     }
 }

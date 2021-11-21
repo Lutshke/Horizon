@@ -32,8 +32,8 @@ namespace Horizon.Downloader
         private static List<IVideo> GetTracksAsIVideo(DiscordUser user, LavalinkLoadResult tracks)
         {
             return (tracks.LoadResultType == LavalinkLoadResultType.PlaylistLoaded
-                            ? tracks.Tracks.Select(track => new DefaultVideo(user, track))
-                            : tracks.Tracks.Take(1).Select(track => new DefaultVideo(user, track)))
+                            ? tracks.Tracks.Select(track => new LavalinkVideo(user, track))
+                            : tracks.Tracks.Take(1).Select(track => new LavalinkVideo(user, track)))
             .Cast<IVideo>().ToList();
         }
     }

@@ -5,7 +5,7 @@ using Horizon.Interface;
 
 namespace Horizon
 {
-    public class DefaultVideo : IVideo
+    public class LavalinkVideo : IVideo
     {
         public LavalinkTrack Track { get; set; }
         public string Title { get; set; }
@@ -14,7 +14,7 @@ namespace Horizon
         public string Uploader { get; set; }
         public DiscordUser Requester { get; set; }
 
-        public DefaultVideo(DiscordUser user, LavalinkTrack track)
+        public LavalinkVideo(DiscordUser user, LavalinkTrack track)
         {
             this.Track = track;
             this.Requester = user;

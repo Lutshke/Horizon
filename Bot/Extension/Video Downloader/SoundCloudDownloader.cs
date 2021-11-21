@@ -39,7 +39,7 @@ namespace Horizon.Downloader
 
             CheckForSong(track);
 
-            return new List<IVideo>() { new SoundcloudVideo(user, track.Tracks.First(), results[0], query) };
+            return new List<IVideo>() { new YoutubeDLVideo(user, track.Tracks.First(), results[0], query) };
         }
     }
 }
