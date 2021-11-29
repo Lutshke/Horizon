@@ -1,11 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.Entities;
-using DSharpPlus.Lavalink;
 using DSharpPlus.SlashCommands;
 using Horizon.Extensions;
 using Horizon.Interface;

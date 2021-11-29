@@ -40,7 +40,7 @@ namespace Horizon.Commands
 
             var embed = state.NowPlaying.VideoEmbed()
                 .AddField(
-                $"Current Position I `{state.Connection.CurrentState.PlaybackPosition.ToString(@"hh\:mm\:ss")} : {state.NowPlaying.Track.Length.ToString(@"hh\:mm\:ss")}`",
+                $"Current Position I `{state.Connection.CurrentState.PlaybackPosition:hh\\:mm\\:ss} : {state.NowPlaying.Track.Length:hh\\:mm\\:ss}`",
                 $"`{GetTimeLine(state.NowPlaying.Track.Length, state.Connection.CurrentState.PlaybackPosition, 3)}`");
             await ctx.RespondAsync(embed).ConfigureAwait(false);
         }
