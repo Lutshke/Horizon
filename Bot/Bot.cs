@@ -16,11 +16,11 @@ namespace Horizon
 {
     public class Bot
     {
-        public static DiscordClient Client { get; private set; }
-        public static CommandsNextExtension CommandsNext { get; private set; }
+        public DiscordClient Client { get; private set; }
+        public CommandsNextExtension CommandsNext { get; private set; }
+        public InteractivityExtension Interactivity { get; set; }
+        public SlashCommandsExtension Slash { get; private set; }
         public static LavalinkExtension Lavalink { get; private set; }
-        public static InteractivityExtension Interactivity { get; set; }
-        public static SlashCommandsExtension Slash { get; private set; }
         public static SpotifyClient Spotify { get; private set; }
 
         public Bot()
@@ -172,7 +172,7 @@ namespace Horizon
             await Task.Delay(-1).ConfigureAwait(false);
         }
 
-        private static async Task ExecuteCommand(string name, DiscordMessage msg)
+        private async Task ExecuteCommand(string name, DiscordMessage msg)
         {
             await Task.Run(async () =>
             {
