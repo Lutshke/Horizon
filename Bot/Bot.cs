@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using DSharpPlus;
@@ -10,6 +11,11 @@ using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.Lavalink;
 using DSharpPlus.Net;
 using DSharpPlus.SlashCommands;
+using Horizon.Commands;
+using Horizon.Downloader;
+using Horizon.Extensions;
+using Horizon.Extensions.Database;
+using Microsoft.Extensions.DependencyInjection;
 using SpotifyAPI.Web;
 
 namespace Horizon
@@ -19,7 +25,6 @@ namespace Horizon
         public DiscordClient Client { get; private set; }
         public CommandsNextExtension CommandsNext { get; private set; }
         public InteractivityExtension Interactivity { get; set; }
-        public SlashCommandsExtension Slash { get; private set; }
         public static LavalinkExtension Lavalink { get; private set; }
         public static SpotifyClient Spotify { get; private set; }
 
@@ -57,10 +62,28 @@ namespace Horizon
                 }
             );
 
+            //> Enable Lavalink and SlashCommands For DiscordClient
+            Lavalink = Client.UseLavalink();
+
+            //> Singleton Depedencies
+            var DatabaseManager = new DatabaseManager();
+            var MusicPlayer = new MusicPlayer(Lavalink);
+            var DownloaderManager = new DownloaderManager(Lavalink);
+            var PlaylistManager = new PlaylistManager(DatabaseManager, DownloaderManager);
+
+            //> Setup Services
+            var services = new ServiceCollection()
+                .AddSingleton(MusicPlayer)
+                .AddSingleton(DatabaseManager)
+                .AddSingleton(DownloaderManager)
+                .AddSingleton(PlaylistManager)
+                .BuildServiceProvider();
+
             //> CommandsNext
             CommandsNext = Client.UseCommandsNext(
                 new CommandsNextConfiguration
                 {
+                    Services = services,
                     StringPrefixes = new string[] { Config.Prefix },
                     CaseSensitive = false,
                     EnableDms = false,
@@ -71,17 +94,8 @@ namespace Horizon
                 }
             );
 
-            //> Enable Lavalink and SlashCommands For DiscordClient
-            Slash = Client.UseSlashCommands();
-            Lavalink = Client.UseLavalink();
-
-            //> Register Commands
-            //> SlashCommands
-            // Slash.RegisterCommands<Commands.Interactive>();
-
             //> Normal Commands
-            CommandsNext.RegisterCommands<Commands.NSFW>();
-            CommandsNext.RegisterCommands<Commands.Music>();
+            CommandsNext.RegisterCommands<Music>();
             CommandsNext.RegisterConverter(new BooleanArgsConverter());
 
             //> Finish Bot Setup
@@ -90,6 +104,7 @@ namespace Horizon
             //> Events
             Client.Ready += async (client, e) =>
             {
+                services.GetService<DownloaderManager>().ReloadDownloaders();
                 await Client.UpdateStatusAsync(new DiscordActivity("with femboy cock", ActivityType.Playing));
             };
 
@@ -120,7 +135,6 @@ namespace Horizon
                     else
                         await ExecuteCommand("pause", e.Message);
                 }
-
             };
 
             CommandsNext.CommandErrored += async (cnext, e) =>

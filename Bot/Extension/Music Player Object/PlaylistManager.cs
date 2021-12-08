@@ -5,17 +5,26 @@ using System.Threading.Tasks;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.Entities;
 using DSharpPlus.Interactivity.Extensions;
+using DSharpPlus.Lavalink;
+using Horizon.Downloader;
 using Horizon.Extensions.Database;
 using Horizon.Interface;
 
-namespace Horizon.Commands
+namespace Horizon.Extensions
 {
-    class Playlist : BaseCommandModule
+    class PlaylistManager
     {
+        public DatabaseManager Database { get; set; }
+        public DownloaderManager Downloader { get; set; }
+        public MusicPlayer Player { get; set; }
 
-        public static DatabaseManager Database { get; set; } = new();
+        public PlaylistManager(DatabaseManager db, DownloaderManager downloader)
+        {
+            Database = db;
+            Downloader = downloader;
+        }
 
-        public static async Task CreateNewPlaylist(CommandContext ctx)
+        public async Task CreateNewPlaylist(CommandContext ctx)
         {
             var playlist = new DBPlaylist();
 
@@ -69,7 +78,7 @@ namespace Horizon.Commands
 
         }
 
-        public static async Task ShowPlaylist(CommandContext ctx, string id)
+        public async Task ShowPlaylist(CommandContext ctx, string id)
         {
             var count = 0;
             var playlist = Database.GetPlaylist(id) ?? throw new Exception("No playlist found ( •̀ ω •́ )✧");
@@ -80,7 +89,7 @@ namespace Horizon.Commands
 
             foreach (var QueryURL in playlist.Tracks)
             {
-                var tracks = await Music.GetMediaData(QueryURL, ctx.User);
+                var tracks = await Downloader.GetVideosAsync(QueryURL, ctx.User);
                 foreach (var track in tracks)
                 {
                     if (count > 9) break;
@@ -92,19 +101,19 @@ namespace Horizon.Commands
             await ctx.RespondAsync(embed);
         }
 
-        public static async Task LoadPlaylist(CommandContext ctx, string id)
+        public async Task LoadPlaylist(CommandContext ctx, string id)
         {
             var Tracks = new List<IVideo>();
             var playlist = Database.GetPlaylist(id) ?? throw new Exception("No playlist found ( •̀ ω •́ )✧");
 
             foreach (var QueryURL in playlist.Tracks)
-                Tracks.AddRange(await Music.GetMediaData(QueryURL, ctx.User));
+                Tracks.AddRange(await Downloader.GetVideosAsync(QueryURL, ctx.User));
 
             await ctx.RespondAsync($"Loading Playlist `{playlist.Title}` with `{playlist.Count}` tracks! φ(゜▽゜*)♪");
-            await Music.HandlePlaybackStart(ctx, StateLoader.GetState(ctx.Guild), Tracks);
+            await Player.HandlePlaybackStart(ctx, StateLoader.GetState(ctx.Guild), Tracks);
         }
 
-        public static async Task UpdatePlaylist(CommandContext ctx, params string[] options)
+        public async Task UpdatePlaylist(CommandContext ctx, params string[] options)
         {
             if (options.Length < 3)
                 throw new Exception("No id given :(");
@@ -142,7 +151,7 @@ namespace Horizon.Commands
             await Database.SavePlaylist();
         }
 
-        public static async Task GetUserPlaylists(CommandContext ctx)
+        public async Task GetUserPlaylists(CommandContext ctx)
         {
             var count = 0;
             var playlists = Database.GetUserPlaylists(ctx.User.Id.ToString());
@@ -167,7 +176,6 @@ namespace Horizon.Commands
 
         }
 
-        public static void DeletePlaylist(string id) =>
-            Database.RemovePlaylist(id);
+        public void DeletePlaylist(string id) => Database.RemovePlaylist(id);
     }
 }

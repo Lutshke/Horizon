@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using DSharpPlus.Entities;
 using DSharpPlus.Lavalink;
 using Horizon.Interface;
 
@@ -8,10 +11,12 @@ namespace Horizon.Downloader
 {
     public class DownloaderManager
     {
-        public LavalinkNodeConnection NodeConnection { get; set; } = Bot.Lavalink.ConnectedNodes.Values.First();
-        public Dictionary<string, IVideoDownloader> Downloaders { get; set; }
+        public DownloaderManager(LavalinkExtension lavalink)
+        {
+            this.Lavalink = lavalink;
+        }
 
-        public DownloaderManager()
+        public void ReloadDownloaders()
         {
             var type = typeof(IVideoDownloader);
             Downloaders = type.Assembly.ExportedTypes
@@ -27,7 +32,18 @@ namespace Horizon.Downloader
                 .ToDictionary(x => x.Name, x => x);
         }
 
-        public IVideoDownloader Get(string Name)
+        public LavalinkExtension Lavalink { get; set; }
+        public LavalinkNodeConnection NodeConnection => Lavalink.ConnectedNodes.Values.FirstOrDefault();
+        public Dictionary<string, IVideoDownloader> Downloaders { get; set; }
+
+        public async Task<List<IVideo>> GetVideosAsync(string search, DiscordUser user)
+        {
+            var match = Regex.Match(search, @"(?:(?:[a-z]+\.)*)(\w+)\.(?:[a-z]+)");
+            var host = match.Groups.Values.Last().Value;
+            return await GetDownloader(host).GetVideos(search, user).ConfigureAwait(false);
+        }
+
+        public IVideoDownloader GetDownloader(string Name)
         {
             if (!Downloaders.ContainsKey(Name))
                 return Downloaders["default"];

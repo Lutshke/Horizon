@@ -1,26 +1,22 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 using DSharpPlus.Entities;
-using DSharpPlus.Lavalink;
 using Horizon.Downloader;
 using Horizon.Extensions;
-using Horizon.Interface;
-using static Horizon.Commands.Playlist;
 using static Horizon.Extensions.Checker; // For CheckFor.. Methods
 
 namespace Horizon.Commands
 {
     class Music : BaseCommandModule
     {
-        public static LavalinkNodeConnection NodeConnection { get; set; } = Bot.Lavalink.ConnectedNodes.Values.First();
-        public static DownloaderManager Manager { get; set; } = new();
+        public DownloaderManager Downloader { get; set; }
+        public PlaylistManager Playlist { get; set; }
+        public MusicPlayer Player { get; set; }
 
         [Command, Aliases("fuckoff")]
         public async Task Leave(CommandContext ctx)
@@ -53,7 +49,7 @@ namespace Horizon.Commands
             if (state.Playing)
             {
                 CheckForMemberConnection(ctx.Member);
-                var loadResult = await GetMediaData(search, ctx.User).ConfigureAwait(false);
+                var loadResult = await Downloader.GetVideosAsync(search, ctx.User).ConfigureAwait(false);
 
                 var track = loadResult.First();
                 state.Queue.Insert(0, track);
@@ -75,7 +71,7 @@ namespace Horizon.Commands
                 return;
             }
 
-            var loadResult = await GetMediaData(search, ctx.User).ConfigureAwait(false);
+            var loadResult = await Downloader.GetVideosAsync(search, ctx.User).ConfigureAwait(false);
             var track = loadResult.First();
 
             state.Queue.Insert(0, track);
@@ -105,76 +101,41 @@ namespace Horizon.Commands
         public async Task Play(CommandContext ctx, [RemainingText] string search)
         {
             var state = StateLoader.GetState(ctx.Guild);
-            var loadResult = await GetMediaData(search, ctx.User).ConfigureAwait(false);
-            await HandlePlaybackStart(ctx, state, loadResult).ConfigureAwait(false);
+            var loadResult = await Downloader.GetVideosAsync(search, ctx.User).ConfigureAwait(false);
+            await Player.HandlePlaybackStart(ctx, state, loadResult).ConfigureAwait(false);
         }
 
         [Command, Aliases("pl")]
-        public async Task Playlist(CommandContext ctx, params string[] options)
+        public async Task playlist(CommandContext ctx, params string[] options)
         {
             switch (options[0].Trim().ToLower())
             {
                 case "new":
-                    await CreateNewPlaylist(ctx);
+                    await Playlist.CreateNewPlaylist(ctx);
                     break;
                 case "show":
                     if (options.Length < 2)
                         throw new Exception("No id given :(");
-                    await ShowPlaylist(ctx, options[1]);
+                    await Playlist.ShowPlaylist(ctx, options[1]);
                     break;
                 case "load":
                     if (options.Length < 2)
                         throw new Exception("No id given :(");
-                    await LoadPlaylist(ctx, options[1]);
+                    await Playlist.LoadPlaylist(ctx, options[1]);
                     break;
                 case "delete":
                     if (options.Length < 2)
                         throw new Exception("No id given :(");
-                    DeletePlaylist(options[1]);
+                    Playlist.DeletePlaylist(options[1]);
                     break;
                 case "update":
-                    await UpdatePlaylist(ctx, options);
+                    await Playlist.UpdatePlaylist(ctx, options);
                     break;
                 case "list":
-                    await GetUserPlaylists(ctx);
+                    await Playlist.GetUserPlaylists(ctx);
                     break;
                 default:
                     break;
-            }
-        }
-
-        public static async Task HandlePlaybackStart(CommandContext ctx, GuildState state, List<IVideo> result)
-        {
-            CheckForMemberConnection(ctx.Member);
-            if (state.Connection is null)
-                state.Connection = await NodeConnection.ConnectAsync(ctx.Member.VoiceState.Channel).ConfigureAwait(false);
-
-            var IsPlaylist = result.Count > 1;
-            var track = result[0];
-
-            if (IsPlaylist)
-            {
-                foreach (IVideo trk in result)
-                    state.Queue.Add(trk);
-                int count = state.Playing ? result.Count : result.Count - 1;
-                await ctx.RespondAsync($"Added `{count}` tracks to the Queue!").ConfigureAwait(false);
-
-                if (!state.Playing)
-                {
-                    await MusicPlayer.PlayTrack(state, state.Queue.Pop(0)).ConfigureAwait(false);
-                    await ctx.Channel.SendMessageAsync($"Now playing {track.Title}!").ConfigureAwait(false);
-                }
-            }
-            else if (state.Playing)
-            {
-                state.Queue.Add(track);
-                await ctx.RespondAsync($"Added `{track.Title}` to the Queue!").ConfigureAwait(false);
-            }
-            else
-            {
-                state.Channel = ctx.Channel;
-                await MusicPlayer.PlayTrack(state, track);
-                await ctx.RespondAsync($"Now playing {track.Title}!").ConfigureAwait(false);
             }
         }
 
@@ -335,22 +296,14 @@ namespace Horizon.Commands
         }
 
         // Other Util Functions
-        public static async Task CreateQuickResponse(CommandContext ctx, string msg)
+        public async Task CreateQuickResponse(CommandContext ctx, string msg)
         {
             var message = await ctx.RespondAsync(msg);
             await Task.Delay((int)TimeSpan.FromSeconds(5).TotalMilliseconds);
             await message.DeleteAsync();
         }
 
-        // Music Util Functions
-        public static async Task<List<IVideo>> GetMediaData(string search, DiscordUser user)
-        {
-            var match = Regex.Match(search, @"(?:(?:[a-z]+\.)*)(\w+)\.(?:[a-z]+)");
-            var host = match.Success ? match.Groups[1].Value : "default";
-            return await Manager.Get(host).GetVideos(search, user).ConfigureAwait(false);
-        }
-
-        private static string GetTimeLine(TimeSpan FullTime, TimeSpan CurrentTime, int multiplier = 1)
+        private string GetTimeLine(TimeSpan FullTime, TimeSpan CurrentTime, int multiplier = 1)
         {
             char[] TimeLine = Enumerable.Repeat('-', 10 * multiplier).ToArray();
             TimeLine[GetCurrentTimelinePosition(FullTime, CurrentTime, multiplier)] = '※';
