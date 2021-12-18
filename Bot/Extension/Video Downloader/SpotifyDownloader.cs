@@ -27,13 +27,19 @@ namespace Horizon.Downloader
 
         public async Task<List<IVideo>> GetVideos(string query, DiscordUser user)
         {
+            var response = new List<IVideo>();
             string SpotifyId = GetSpotifyId(query);
-            var track = query.Contains("track")
-                ? await Bot.Spotify.Tracks.Get(SpotifyId).ConfigureAwait(false)
-                : (await Bot.Spotify.Playlists.Get(SpotifyId).ConfigureAwait(false)).Tracks.Items.First().Track as FullTrack;
-            var tracks = await Node.Rest.GetTracksAsync($"{track.Name} {track.Artists.First().Name}").ConfigureAwait(false);
-            CheckForSong(tracks);
-            return tracks.Tracks.Take(1).Select(track => new LavalinkVideo(user, track) as IVideo).ToList();
+            var tracks = query.Contains("track")
+                ? new List<FullTrack>() { await Bot.Spotify.Tracks.Get(SpotifyId).ConfigureAwait(false) }
+                : (await Bot.Spotify.Playlists.Get(SpotifyId).ConfigureAwait(false)).Tracks.Items.Select(m => m.Track).Cast<FullTrack>().ToList();
+
+            foreach (var item in tracks)
+            {
+                var track = await Node.Rest.GetTracksAsync($"{item.Name} {item.Artists.First().Name}").ConfigureAwait(false);
+                CheckForSong(track);
+                response.Add(new LavalinkVideo(user, track.Tracks.First()));
+            }
+            return response;
         }
     }
 }
